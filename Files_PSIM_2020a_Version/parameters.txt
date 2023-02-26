@@ -1,0 +1,88 @@
+// Position Control
+
+//--------------------------Change This parameters-------------------//
+xFloor = 2; // Distance between floors
+inicialFloor = 2; // Initial Floor
+finalFloor = 1; // Final Floor
+
+// Elevator + load mass (kg) 
+mLC = 2000;	// Max: 2000, Min:1000
+//-----------------------------------------------------------------------------//
+
+xi = inicialFloor*xFloor; // Initial Position
+xf = finalFloor*xFloor; // Final Position
+deltaX = xf - xi; // Distance
+
+simulationTime = deltaX+2;	// Simulation Time estimation 
+											  // Need to be changed manualy :(
+
+a_max = 2;  // Max acelaration (cannot be change)
+v_max = 1; // Max velocity (cannot be change)
+v_min = -v_max; // Min velocity (cannot be change)
+break = 1/2*v_max/a_max; // Break start distance
+
+// Grid Parameters
+Vg_rms = 400;
+fg = 50;
+
+// Motor Parameters (IE4-PE1R 160 L4 / IE4-PE0R 160 S4 - Pn = 15.0 kW)
+m_p = 2;
+m_Rs = 0.125;
+m_Ls = 3.717m+1.306m;
+m_J = 0.068;
+
+// Parameters for the PI controllers calculation
+m_Vn = 357;	 // Nominal Voltage (V)
+m_In = 26.5; // Nominal Current (A)
+m_Wn_rpm = 1500; // Nominal Velocity (rpm)
+m_Wn = 1500*2*pi/60;
+
+fsw = 5e3;	// Switching frequency
+
+// Pulley and Gearbox parameters
+r = 0.25; // Pulley radius 
+Ir = 3;	// Moment of Inercia
+rt = 39; // Gearbox ratio
+Ef = 0.85; // Gearbox eficiency
+
+// Counterweight parameters
+mCP = 1460;	// Counterweight mass (kg)
+g = 9.8; // Gravity acelaration (m/s^2)
+
+Teq = (mLC-mCP)*g*r / (Ef*rt);     
+Ieq = ((mLC+mCP)*r^2+Ir) / (Ef*rt^2); 
+
+// 357 Vrms LineToLine @ 1000 rpm (Is=0)
+m_x_Vdq = 229;				
+m_x_wMc_rpm = 1000;												
+m_x_wm = m_x_wMc_rpm * m_p * (2*pi/60);
+m_Vk = sqrt(2)*m_x_Vdq / (m_x_wMc_rpm/1000); // Vpk / krpm
+
+// Permanent Magnet Flux
+psi_f = m_x_Vdq / m_x_wm;
+
+// Fonte de Alimentacao DC
+VDC = m_Vn*4/sqrt(6) * 1/1.16; // With SVM
+
+// Control limits
+IqMax = 3*m_In;
+IqMin = -3*m_In;
+
+VqMax = 300;
+VqMin = -300;
+
+VdMax = 60;
+VdMin = -60;
+
+// Reference response setup
+Tstl = 10m; // setling time (sec)
+Mp = 1; // overshoot (%); peak value above reference
+eW = 1; // steady state error window (%); after Tstl the response stays within this window
+
+// Reference response values
+zeta = -ln((1/100)*Mp)/sqrt(ln((1/100)*Mp)^2+pi^2);
+wn = -ln((1/100)*eW)/(Tstl*zeta);
+
+// PI controller values
+ki = wn^2*m_Ls;
+kp = 2*zeta*wn*m_Ls - m_Rs;
